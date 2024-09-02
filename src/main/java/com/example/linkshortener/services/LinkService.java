@@ -1,5 +1,7 @@
 package com.example.linkshortener.services;
 
+import com.example.linkshortener.exceptions.LinkErrors;
+import com.example.linkshortener.exceptions.LinkServiceException;
 import com.example.linkshortener.models.Link;
 import com.example.linkshortener.repository.LinkRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,10 +18,10 @@ import java.util.UUID;
 public class LinkService {
     private final LinkRepository linkRepository;
 
-    public boolean createLink(Link link) {
+    public Link createLink(Link link) throws LinkServiceException {
         UrlValidator urlValidator = new UrlValidator();
-        if (urlValidator.isValid(link.originalUrl)) {
-            return false;
+        if (!urlValidator.isValid(link.originalUrl)) {
+            throw new LinkServiceException(LinkErrors.ORIGINAL_LINK_INVALID);
         }
 
         if (link.redirectUrl == null || link.redirectUrl.isEmpty()) {
@@ -33,13 +35,11 @@ public class LinkService {
 
         }
 
-        linkRepository.save(link);
-        return true;
+        return linkRepository.save(link);
     }
 
-    public Link getLink(String redirectUrl) {
-
-        return linkRepository.findById(redirectUrl).orElse(null);
+    public Link getLink(String redirectUrl) throws LinkServiceException {
+        return linkRepository.findById(redirectUrl).orElseThrow(() -> new LinkServiceException(LinkErrors.LINK_NOT_FOUND));
     }
 
     public List<Link> getAllLinks() {
